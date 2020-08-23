@@ -1,0 +1,86 @@
+Option Explicit
+Private Sub ListWorkbookAndSheetNames_Click()
+   Dim fd As FileDialog
+   Dim vrtSelectedItem As Variant
+   Dim book As Workbook
+   Dim sheet As Worksheet, sheet_out As Worksheet
+   Dim row_count As Long, lastUsedColumn As Long, lastUsedRow As Long, curColumn As Long, curRow As Long
+   Set fd = Application.FileDialog(msoFileDialogFilePicker)
+   Set sheet_out = ActiveWorkbook.Sheets.Add _
+   (After:=ActiveWorkbook.Worksheets(ActiveWorkbook.Worksheets.Count))
+   ActiveWorkbook.Sheets(Worksheets.Count).Name = "Reports"
+   
+   row_count = 1
+   sheet_out.Cells(row_count, 1) = "No."
+   sheet_out.Cells(row_count, 2) = "Workbooks"
+   sheet_out.Cells(row_count, 3) = "Worksheets"
+   sheet_out.Cells(row_count, 4) = "Cell Location"
+   sheet_out.Cells(row_count, 5) = "Visibility"
+   sheet_out.Cells(row_count, 6) = "Cell Color"
+   sheet_out.Cells(row_count, 7) = "Texts"
+   row_count = row_count + 1
+   
+   With fd
+      .AllowMultiSelect = True
+      .Filters.Add "Excel Files", "*.xls*", 1
+      Application.ScreenUpdating = False
+      If .Show = -1 Then
+         For Each vrtSelectedItem In .SelectedItems
+             Set book = Workbooks.Open(vrtSelectedItem)
+             With book
+                 For Each sheet In book.Worksheets
+                     lastUsedColumn = getLastUsedColumn(sheet)
+                     lastUsedRow = getLastUsedRow(sheet)
+                     curColumn = 1
+                     Do While curColumn <= lastUsedColumn
+                         curRow = 1
+                         Do While curRow <= lastUsedRow
+                             'If a cell is not blank OR a cell have fill color
+                             If sheet.Cells(curRow, curColumn).Value <> "" Or sheet.Cells(curRow, curColumn).Interior.ColorIndex <> xlNone Then
+                                sheet_out.Cells(row_count, 1) = row_count
+                                sheet_out.Cells(row_count, 2) = book.Name
+                                sheet_out.Cells(row_count, 3) = sheet.Name
+                                sheet_out.Cells(row_count, 4) = cnvtCellLocFmt(curColumn, curRow)
+                                If sheet.Cells(curRow, curColumn).EntireRow.Hidden = True Then
+                                    sheet_out.Cells(row_count, 5) = "Hidden"
+                                ElseIf sheet.Columns(curColumn).Hidden = True Then
+                                    sheet_out.Cells(row_count, 5) = "Hidden"
+                                Else
+                                    sheet_out.Cells(row_count, 5) = "Visible"
+                                End If
+                                If sheet.Cells(curRow, curColumn).Interior.ColorIndex = xlNone Then
+                                    sheet_out.Cells(row_count, 6) = "No Fill"
+                                Else
+                                    sheet_out.Cells(row_count, 6).Interior.Color = sheet.Cells(curRow, curColumn).Interior.Color
+                                End If
+                                sheet_out.Cells(row_count, 7) = sheet.Cells(curRow, curColumn).Value
+                                row_count = row_count + 1
+                             End If
+                             curRow = curRow + 1
+                         Loop
+                         curColumn = curColumn + 1
+                     Loop
+                         row_count = row_count + 1
+                 Next sheet
+             End With  'end of With book
+             Application.CutCopyMode = False
+             book.Close SaveChanges:=True
+         Next vrtSelectedItem
+      End If
+      Application.ScreenUpdating = True
+   End With
+   Set fd = Nothing
+   MsgBox "Done!"
+End Sub
+
+Private Function getLastUsedColumn(sheet)
+    getLastUsedColumn = sheet.UsedRange.Column - 1 + sheet.UsedRange.Columns.Count
+End Function
+
+Private Function getLastUsedRow(sheet)
+    getLastUsedRow = sheet.UsedRange.Row - 1 + sheet.UsedRange.Rows.Count
+End Function
+
+Private Function cnvtCellLocFmt(cCol, cRow) As String
+    cnvtCellLocFmt = Split(Cells(1, cCol).Address, "$")(1) + CStr(cRow)
+End Function
