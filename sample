@@ -41,7 +41,9 @@ Private Sub ListWorkbookAndSheetNames_Click()
                                 sheet_out.Cells(row_count, 2) = book.Name
                                 sheet_out.Cells(row_count, 3) = sheet.Name
                                 sheet_out.Cells(row_count, 4) = cnvtCellLocFmt(curColumn, curRow)
-                                If sheet.Cells(curRow, curColumn).EntireRow.Hidden = True Then
+                                If sheet.Visible = False Then
+                                    sheet_out.Cells(row_count, 5) = "Hidden"
+                                ElseIf sheet.Cells(curRow, curColumn).EntireRow.Hidden = True Then
                                     sheet_out.Cells(row_count, 5) = "Hidden"
                                 ElseIf sheet.Columns(curColumn).Hidden = True Then
                                     sheet_out.Cells(row_count, 5) = "Hidden"
